@@ -38,7 +38,16 @@ variable "alerts" {
   type = list(
     object({
       name           = string
-      metric_expr    = string                # Just the metric calculation part
+      # Prometheus-style fields
+      metric_expr    = optional(string, null) # Prometheus query expression
+      # CloudWatch-style fields
+      namespace      = optional(string, null) # AWS namespace (e.g., AWS/EC2)
+      metric_name    = optional(string, null) # CloudWatch metric name
+      dimensions     = optional(map(string), {}) # CloudWatch dimensions
+      statistic      = optional(string, "Average") # CloudWatch statistic (Sum, Average, Maximum, etc.)
+      period         = optional(string, "300") # CloudWatch period in seconds
+      region         = optional(string, "default") # CloudWatch region
+      # Common fields
       operator       = optional(string, ">") # >, <, ==, !=, >=, <=
       threshold      = number                # Threshold value
       severity       = string
@@ -57,6 +66,15 @@ variable "alerts" {
       for alert in var.alerts : contains([">", "<", "==", "!=", ">=", "<="], alert.operator)
     ])
     error_message = "operator must be one of: >, <, ==, !=, >=, <="
+  }
+
+  validation {
+    condition = alltrue([
+      for alert in var.alerts : 
+      (alert.metric_expr != null && alert.namespace == null && alert.metric_name == null) ||
+      (alert.metric_expr == null && alert.namespace != null && alert.metric_name != null)
+    ])
+    error_message = "For Prometheus datasources, provide metric_expr. For CloudWatch datasources, provide namespace and metric_name."
   }
 }
 

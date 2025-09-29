@@ -34,7 +34,7 @@ terraform {
 
 ## Usage
 
-### Basic Usage
+### Basic Usage (Prometheus)
 
 ```hcl
 module "basic_alerts" {
@@ -44,23 +44,72 @@ module "basic_alerts" {
   folder_uid         = "grafana-folder-uid"
   rule_group_name    = "Basic Alerts"
   contact_point_name = "OpsGenie"
+  datasource_type    = "prometheus"
   
   alerts = [
     {
-      name     = "High CPU Usage"
-      expr     = "cpu_usage_percent > 80"
-      severity = "warning"
+      name        = "High CPU Usage"
+      metric_expr = "cpu_usage_percent"
+      operator    = ">"
+      threshold   = 80
+      severity    = "warning"
     },
     {
-      name     = "Database Connection Issues"
-      expr     = "postgres_connections_active / postgres_connections_max > 0.9"
-      severity = "critical"
+      name        = "Database Connection Issues"
+      metric_expr = "postgres_connections_active / postgres_connections_max"
+      operator    = ">"
+      threshold   = 0.9
+      severity    = "critical"
     }
   ]
 }
 ```
 
-### Production Usage
+### Basic Usage (CloudWatch)
+
+```hcl
+module "cloudwatch_alerts" {
+  source             = "delivops/grafana-alerts/grafana"
+  version            = "1.0.0"
+
+  folder_uid         = "grafana-folder-uid"
+  rule_group_name    = "AWS Alerts"
+  contact_point_name = "OpsGenie"
+  datasource_type    = "cloudwatch"
+  
+  alerts = [
+    {
+      name        = "EC2 Instance Status Check Failed"
+      namespace   = "AWS/EC2"
+      metric_name = "StatusCheckFailed_Instance"
+      dimensions = {
+        InstanceId = "i-00dd2460aa9528157"
+      }
+      statistic   = "Sum"
+      period      = "300"
+      region      = "us-east-1"
+      operator    = ">"
+      threshold   = 0
+      severity    = "critical"
+    },
+    {
+      name        = "High CPU Utilization"
+      namespace   = "AWS/EC2"
+      metric_name = "CPUUtilization"
+      dimensions = {
+        InstanceId = "i-00dd2460aa9528157"
+      }
+      statistic   = "Average"
+      period      = "300"
+      operator    = ">"
+      threshold   = 80
+      severity    = "warning"
+    }
+  ]
+}
+```
+
+### Production Usage (Prometheus)
 
 ```hcl
 module "production_alerts" {
@@ -70,6 +119,7 @@ module "production_alerts" {
   folder_uid         = "prod-folder-uid"
   rule_group_name    = "Production Alerts"
   contact_point_name = "PagerDuty"
+  datasource_type    = "prometheus"
 
   # Customize notification timing
   notification_settings = {
@@ -82,7 +132,9 @@ module "production_alerts" {
   alerts = [
     {
       name        = "API Response Time High"
-      expr        = "histogram_quantile(0.95, http_request_duration_seconds) > 2"
+      metric_expr = "histogram_quantile(0.95, http_request_duration_seconds)"
+      operator    = ">"
+      threshold   = 2
       severity    = "warning"
       description = "API 95th percentile response time is above 2 seconds"
       runbook_url = "https://wiki.company.com/runbooks/api-performance"
@@ -91,7 +143,9 @@ module "production_alerts" {
     },
     {
       name        = "Database Connection Pool Exhausted"
-      expr        = "postgres_connection_pool_used / postgres_connection_pool_max > 0.95"
+      metric_expr = "postgres_connection_pool_used / postgres_connection_pool_max"
+      operator    = ">"
+      threshold   = 0.95
       severity    = "critical"
       description = "Database connection pool is nearly full"
       runbook_url = "https://wiki.company.com/runbooks/database"
@@ -115,12 +169,37 @@ This module makes sensible choices so you don't have to:
 | **Group Wait** | `45s` | Allow time for related alerts to group |
 | **Repeat Interval** | `12h` | Aggressive enough for production |
 
+## Alert Configuration
+
+This module supports both **Prometheus** and **CloudWatch** datasources with different configuration patterns:
+
+### Prometheus Alerts
+For Prometheus datasources, provide:
+- **metric_expr**: Prometheus query expression (e.g., `cpu_usage_percent`, `rate(http_requests_total[5m])`)
+
+### CloudWatch Alerts  
+For CloudWatch datasources, provide:
+- **namespace**: AWS namespace (e.g., `AWS/EC2`, `AWS/RDS`)
+- **metric_name**: CloudWatch metric name (e.g., `CPUUtilization`, `StatusCheckFailed`)
+- **dimensions**: Key-value map of dimensions (e.g., `{InstanceId = "i-123"}`)
+- **statistic**: Aggregation method (`Average`, `Sum`, `Maximum`, `Minimum`)
+- **period**: Aggregation period in seconds (default: `"300"`)
+- **region**: AWS region (default: `"default"`)
+
 ## Alert Fields
 
-### Required
+### Required (All Datasources)
 - **name**: Alert name (will appear in notifications)
-- **expr**: Prometheus query expression
+- **operator**: Comparison operator (`>`, `<`, `>=`, `<=`, `==`, `!=`)
+- **threshold**: Threshold value for comparison
 - **severity**: `critical`, `error`, `warning`, or `info`
+
+### Required (Prometheus)
+- **metric_expr**: Prometheus query expression
+
+### Required (CloudWatch)
+- **namespace**: AWS namespace
+- **metric_name**: CloudWatch metric name
 
 ### Production Enhancements (Optional)
 - **description**: Human-readable alert context
@@ -219,13 +298,33 @@ The module automatically maps severity levels to standard priorities:
 
 ## Examples
 
-### Simple Monitoring
+### Prometheus Monitoring
 ```hcl
 alerts = [
   {
-    name     = "High Memory Usage"
-    expr     = "memory_usage_percent > 85"
-    severity = "warning"
+    name        = "High Memory Usage"
+    metric_expr = "memory_usage_percent"
+    operator    = ">"
+    threshold   = 85
+    severity    = "warning"
+  }
+]
+```
+
+### CloudWatch Monitoring
+```hcl
+alerts = [
+  {
+    name        = "RDS High CPU"
+    namespace   = "AWS/RDS"
+    metric_name = "CPUUtilization"
+    dimensions = {
+      DBInstanceIdentifier = "production-db"
+    }
+    statistic   = "Average"
+    operator    = ">"
+    threshold   = 80
+    severity    = "warning"
   }
 ]
 ```
@@ -235,7 +334,9 @@ alerts = [
 alerts = [
   {
     name        = "Database Slow Queries"
-    expr        = "mysql_slow_queries_rate > 10"
+    metric_expr = "mysql_slow_queries_rate"
+    operator    = ">"
+    threshold   = 10
     severity    = "critical"
     description = "Database is processing too many slow queries"
     runbook_url = "https://wiki.company.com/db-slow-queries"

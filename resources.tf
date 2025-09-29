@@ -49,7 +49,19 @@ resource "grafana_rule_group" "alerts" {
           to   = 0
         }
         datasource_uid = local.datasource_uid
-        model = jsonencode({
+        model = var.datasource_type == "cloudwatch" ? jsonencode({
+          datasource = {
+            type = var.datasource_type
+            uid  = local.datasource_uid
+          }
+          namespace  = rule.value.namespace
+          metricName = rule.value.metric_name
+          dimensions = rule.value.dimensions
+          statistic  = rule.value.statistic
+          period     = rule.value.period != null ? rule.value.period : "300"
+          region     = rule.value.region != null ? rule.value.region : "default"
+          refId      = "A"
+        }) : jsonencode({
           datasource = {
             type = var.datasource_type
             uid  = local.datasource_uid
