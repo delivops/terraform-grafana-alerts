@@ -18,7 +18,7 @@ output "configured_alerts" {
   value       = [for alert in var.alerts : alert.name]
 }
 
-output "prometheus_datasource_uid" {
-  description = "UID of the Prometheus datasource used"
-  value       = data.grafana_data_source.prometheus.uid
+output "datasource_uid" {
+  description = "UID of the datasource used for alerts"
+  value       = local.datasource_uid
 }
