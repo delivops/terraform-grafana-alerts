@@ -165,20 +165,28 @@ No modules.
 
 | Name | Type |
 |------|------|
+| [grafana_contact_point.slack](https://registry.terraform.io/providers/grafana/grafana/latest/docs/resources/contact_point) | resource |
+| [grafana_folder.folder](https://registry.terraform.io/providers/grafana/grafana/latest/docs/resources/folder) | resource |
+| [grafana_notification_policy.default](https://registry.terraform.io/providers/grafana/grafana/latest/docs/resources/notification_policy) | resource |
 | [grafana_rule_group.alerts](https://registry.terraform.io/providers/grafana/grafana/latest/docs/resources/rule_group) | resource |
-| [grafana_data_source.prometheus](https://registry.terraform.io/providers/grafana/grafana/latest/docs/data-sources/data_source) | data source |
+| [grafana_data_source.datasource](https://registry.terraform.io/providers/grafana/grafana/latest/docs/data-sources/data_source) | data source |
 
 ## Inputs
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
-| <a name="input_alerts"></a> [alerts](#input\_alerts) | List of alert configurations | <pre>list(<br/>    object({<br/>      name        = string<br/>      expr        = string<br/>      severity    = string<br/>      description = optional(string, null)<br/>      runbook_url = optional(string, null)<br/>      team        = optional(string, null)<br/>      component   = optional(string, null)<br/>    })<br/>  )</pre> | n/a | yes |
-| <a name="input_contact_point_name"></a> [contact\_point\_name](#input\_contact\_point\_name) | Name of the contact point | `string` | n/a | yes |
-| <a name="input_folder_uid"></a> [folder\_uid](#input\_folder\_uid) | Uid of the Grafana folder | `string` | n/a | yes |
+| <a name="input_alerts"></a> [alerts](#input\_alerts) | List of alert configurations | <pre>list(<br/>    object({<br/>      name           = string<br/>      metric_expr    = string                # Just the metric calculation part<br/>      operator       = optional(string, ">") # >, <, ==, !=, >=, <=<br/>      threshold      = number                # Threshold value<br/>      severity       = string<br/>      description    = optional(string, null)<br/>      runbook_url    = optional(string, null)<br/>      team           = optional(string, null)<br/>      component      = optional(string, null)<br/>      pending_for    = optional(string, "5m")<br/>      no_data_state  = optional(string, "Alerting")<br/>      exec_err_state = optional(string, "Alerting")<br/>    })<br/>  )</pre> | n/a | yes |
+| <a name="input_contact_point_name"></a> [contact\_point\_name](#input\_contact\_point\_name) | Name of the contact point to use for notifications. Required if not creating a new Slack contact point. | `string` | `null` | no |
+| <a name="input_datasource_name"></a> [datasource\_name](#input\_datasource\_name) | Name of the Grafana datasource to use for alerts | `string` | `null` | no |
+| <a name="input_datasource_type"></a> [datasource\_type](#input\_datasource\_type) | Type of the datasource (e.g., prometheus, loki, influxdb, etc.) | `string` | `"prometheus"` | no |
+| <a name="input_datasource_uid"></a> [datasource\_uid](#input\_datasource\_uid) | UID of the Grafana datasource to use for alerts (takes precedence over datasource\_name) | `string` | `null` | no |
+| <a name="input_folder_uid"></a> [folder\_uid](#input\_folder\_uid) | Uid of the Grafana folder to place the rule group in. If null, a new folder named after the rule\_group\_name will be created. | `string` | `null` | no |
 | <a name="input_grafana_api_key"></a> [grafana\_api\_key](#input\_grafana\_api\_key) | Grafana API key with permissions to manage alerting | `string` | n/a | yes |
 | <a name="input_grafana_url"></a> [grafana\_url](#input\_grafana\_url) | Base URL for Grafana instance | `string` | `"https://grafana.company.com"` | no |
-| <a name="input_notification_settings"></a> [notification\_settings](#input\_notification\_settings) | Notification settings for alerts | <pre>object({<br/>    group_by        = optional(list(string), ["alertname", "cluster", "severity"])<br/>    group_wait      = optional(string, "45s")<br/>    group_interval  = optional(string, "6m")<br/>    repeat_interval = optional(string, "12h")<br/>  })</pre> | <pre>{<br/>  "group_by": [<br/>    "alertname",<br/>    "cluster",<br/>    "severity"<br/>  ],<br/>  "group_interval": "6m",<br/>  "group_wait": "45s",<br/>  "repeat_interval": "12h"<br/>}</pre> | no |
+| <a name="input_notification_settings"></a> [notification\_settings](#input\_notification\_settings) | Notification settings for alerts | <pre>object({<br/>    group_by        = optional(list(string), ["alertname", "cluster", "severity"])<br/>    group_wait      = optional(string, "30s")<br/>    group_interval  = optional(string, "5m")<br/>    repeat_interval = optional(string, "4h")<br/>  })</pre> | <pre>{<br/>  "group_by": [<br/>    "alertname",<br/>    "cluster",<br/>    "severity"<br/>  ],<br/>  "group_interval": "5m",<br/>  "group_wait": "30s",<br/>  "repeat_interval": "4h"<br/>}</pre> | no |
 | <a name="input_rule_group_name"></a> [rule\_group\_name](#input\_rule\_group\_name) | Name of the rule group | `string` | n/a | yes |
+| <a name="input_slack_api_token"></a> [slack\_api\_token](#input\_slack\_api\_token) | Slack Bot User OAuth Token (xoxb-...). Get from https://api.slack.com/apps | `string` | `null` | no |
+| <a name="input_slack_channel"></a> [slack\_channel](#input\_slack\_channel) | Slack channel to send alerts to (with # prefix, e.g., #alerts) | `string` | `"#alerts"` | no |
 
 ## Outputs
 
@@ -186,7 +194,7 @@ No modules.
 |------|-------------|
 | <a name="output_alert_count"></a> [alert\_count](#output\_alert\_count) | Number of alerts configured |
 | <a name="output_configured_alerts"></a> [configured\_alerts](#output\_configured\_alerts) | List of configured alert names |
-| <a name="output_prometheus_datasource_uid"></a> [prometheus\_datasource\_uid](#output\_prometheus\_datasource\_uid) | UID of the Prometheus datasource used |
+| <a name="output_datasource_uid"></a> [datasource\_uid](#output\_datasource\_uid) | UID of the datasource used for alerts |
 | <a name="output_rule_group_id"></a> [rule\_group\_id](#output\_rule\_group\_id) | The ID of the created rule group |
 | <a name="output_rule_group_name"></a> [rule\_group\_name](#output\_rule\_group\_name) | The name of the created rule group |
 <!-- END_TF_DOCS -->
