@@ -3,17 +3,6 @@ resource "grafana_folder" "folder" {
   title = var.rule_group_name
 }
 
-# Create a notification policy to route alerts to the contact point
-resource "grafana_notification_policy" "default" {
-  count         = var.contact_point_name == null ? 1 : 0
-  group_by      = var.notification_settings.group_by
-  contact_point = grafana_contact_point.slack[0].name
-
-  group_wait      = var.notification_settings.group_wait
-  group_interval  = var.notification_settings.group_interval
-  repeat_interval = var.notification_settings.repeat_interval
-}
-
 # Create Slack contact point with inline templates
 resource "grafana_contact_point" "slack" {
   count = var.contact_point_name == null ? 1 : 0
