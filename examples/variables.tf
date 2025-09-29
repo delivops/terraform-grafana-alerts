@@ -15,3 +15,14 @@ variable "grafana_api_key" {
   default     = "not-needed-for-local-testing"
   sensitive   = true
 }
+
+variable "grafana_url" {
+  description = "Grafana instance URL"
+  type        = string
+  default     = "http://localhost:3000"
+}
+
+variable "cloudwatch_datasource_uid" {
+  description = "UID of the CloudWatch datasource in Grafana"
+  type        = string
+}
