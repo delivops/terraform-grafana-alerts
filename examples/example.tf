@@ -1,67 +1,53 @@
-# Example 1: Minimal alerts
-module "basic_alerts" {
-  source             = "../"
-  cluster_name       = "prod"
-  folder_uid         = "folder-uid-123"
-  rule_group_name    = "Basic Alerts"
-  contact_point_name = "OpsGenie"
-  
-  alerts = [
-    {
-      name     = "High CPU Usage"
-      expr     = "cpu_usage_percent > 80"
-      severity = "warning"
-    },
-    {
-      name     = "Database Connection Issues" 
-      expr     = "postgres_connections_active / postgres_connections_max > 0.9"
-      severity = "critical"
-    }
-  ]
-}
+# Example 1: Testing with local Docker Compose setup
+module "test_alerts" {
+  source = "../"
 
-# Example 2: Production alerts with full context
-module "production_alerts" {
-  source             = "../"
-  cluster_name       = "prod-eks"
-  folder_uid         = "prod-folder-uid"
-  rule_group_name    = "Production Alerts"
-  contact_point_name = "PagerDuty"
+  rule_group_name = "Docker Test Alerts"
+  grafana_api_key = var.grafana_api_key
+  grafana_url     = "http://localhost:3000"
 
-  # Customize notification timing
-  notification_settings = {
-    group_by        = ["alertname", "severity", "team"]
-    group_wait      = "30s"
-    group_interval  = "5m"
-    repeat_interval = "4h"
-  }
+  # Use the provisioned datasource UID for better performance
+  datasource_uid  = "prometheus-uid-prod"
+  datasource_type = "prometheus"
+
+  slack_api_token = var.slack_api_token
+  slack_channel   = var.slack_channel
 
   alerts = [
     {
-      name        = "API Response Time High"
-      expr        = "histogram_quantile(0.95, http_request_duration_seconds) > 2"
+      name        = "High CPU Usage Test"
+      metric_expr = "100 - (avg(irate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)"
+      operator    = ">"
+      threshold   = 80
       severity    = "warning"
-      description = "API 95th percentile response time is above 2 seconds"
-      runbook_url = "https://wiki.company.com/runbooks/api-performance"
-      team        = "backend"
-      component   = "api"
+      description = "CPU usage is above 80% threshold"
     },
     {
-      name        = "Database Connection Pool Exhausted"
-      expr        = "postgres_connection_pool_used / postgres_connection_pool_max > 0.95"
+      name        = "Node Exporter Down"
+      metric_expr = "up{job=\"node-exporter\"}"
+      operator    = "=="
+      threshold   = 0
       severity    = "critical"
-      description = "Database connection pool is nearly full, may cause timeouts"
-      runbook_url = "https://wiki.company.com/runbooks/database"
-      team        = "platform"
-      component   = "database"
+      description = "Node exporter service is not responding and monitoring data may be unavailable"
     },
     {
-      name        = "Pod Crash Loop"
-      expr        = "increase(kube_pod_container_status_restarts_total[15m]) > 3"
-      severity    = "critical"
-      description = "Pod is restarting frequently"
-      team        = "platform"
-      component   = "kubernetes"
+      name        = "High Memory Usage Test"
+      metric_expr = "(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100"
+      runbook_url = "https://example.com/runbooks/high-memory-usage"
+      operator    = ">"
+      threshold   = 90
+      severity    = "warning"
+      description = "Memory usage is above 90% threshold and may cause performance issues"
+    },
+    # This will always fire for testing purposes
+    {
+      name        = "Test Alert - Always Firing"
+      metric_expr = "1"
+      operator    = "=="
+      threshold   = 1
+      severity    = "info"
+      description = "This alert always fires for testing purposes"
+      runbook_url = "https://example.com/runbooks/test-alert"
     }
   ]
 }

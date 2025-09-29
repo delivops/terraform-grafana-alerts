@@ -1,0 +1,16 @@
+# Copy this file to terraform.tfvars and update with your values
+
+# For local Docker testing, use this default value
+grafana_api_key = "not-needed-for-local-testing"
+
+# Slack Bot User OAuth Token (starts with xoxb-)
+# Get this from: https://api.slack.com/apps -> Your App -> OAuth & Permissions
+# slack_api_token = "xoxb-your-bot-token-here"
+
+# Slack channel to send alerts to (include # prefix)
+slack_channel = "#alerts"
+
+# Or use environment variables:
+# export TF_VAR_grafana_api_key="not-needed-for-local-testing"
+# export TF_VAR_slack_api_token="xoxb-your-token"
+# export TF_VAR_slack_channel="#alerts"

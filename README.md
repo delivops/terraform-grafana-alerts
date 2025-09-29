@@ -40,7 +40,7 @@ terraform {
 module "basic_alerts" {
   source             = "delivops/grafana-alerts/grafana"
   version            = "1.0.0"
-  cluster_name       = "prod"
+
   folder_uid         = "grafana-folder-uid"
   rule_group_name    = "Basic Alerts"
   contact_point_name = "OpsGenie"
@@ -66,7 +66,7 @@ module "basic_alerts" {
 module "production_alerts" {
   source             = "delivops/grafana-alerts/grafana"
   version            = "1.0.0"
-  cluster_name       = "prod-eks"
+
   folder_uid         = "prod-folder-uid"
   rule_group_name    = "Production Alerts"
   contact_point_name = "PagerDuty"
@@ -135,7 +135,6 @@ Every alert automatically gets:
 **Labels:**
 - `severity` - Your specified severity level
 - `priority` - Auto-mapped priority (P1-P4)
-- `alert_name` - Clean alert name
 - `cluster` - Your cluster name
 - `team` - Team owner (from alert or default "platform")
 - `component` - Component name (from alert or default "system")
@@ -174,7 +173,6 @@ No modules.
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
 | <a name="input_alerts"></a> [alerts](#input\_alerts) | List of alert configurations | <pre>list(<br/>    object({<br/>      name        = string<br/>      expr        = string<br/>      severity    = string<br/>      description = optional(string, null)<br/>      runbook_url = optional(string, null)<br/>      team        = optional(string, null)<br/>      component   = optional(string, null)<br/>    })<br/>  )</pre> | n/a | yes |
-| <a name="input_cluster_name"></a> [cluster\_name](#input\_cluster\_name) | Name of the cluster | `string` | n/a | yes |
 | <a name="input_contact_point_name"></a> [contact\_point\_name](#input\_contact\_point\_name) | Name of the contact point | `string` | n/a | yes |
 | <a name="input_folder_uid"></a> [folder\_uid](#input\_folder\_uid) | Uid of the Grafana folder | `string` | n/a | yes |
 | <a name="input_grafana_api_key"></a> [grafana\_api\_key](#input\_grafana\_api\_key) | Grafana API key with permissions to manage alerting | `string` | n/a | yes |
