@@ -167,7 +167,6 @@ No modules.
 |------|------|
 | [grafana_contact_point.slack](https://registry.terraform.io/providers/grafana/grafana/latest/docs/resources/contact_point) | resource |
 | [grafana_folder.folder](https://registry.terraform.io/providers/grafana/grafana/latest/docs/resources/folder) | resource |
-| [grafana_notification_policy.default](https://registry.terraform.io/providers/grafana/grafana/latest/docs/resources/notification_policy) | resource |
 | [grafana_rule_group.alerts](https://registry.terraform.io/providers/grafana/grafana/latest/docs/resources/rule_group) | resource |
 | [grafana_data_source.datasource](https://registry.terraform.io/providers/grafana/grafana/latest/docs/data-sources/data_source) | data source |
 
