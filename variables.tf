@@ -33,21 +33,12 @@ variable "contact_point_name" {
   }
 }
 
-variable "alerts" {
-  description = "List of alert configurations"
+variable "prometheus_alerts" {
+  description = "List of Prometheus alert configurations"
   type = list(
     object({
       name           = string
-      # Prometheus-style fields
-      metric_expr    = optional(string, null) # Prometheus query expression
-      # CloudWatch-style fields
-      namespace      = optional(string, null) # AWS namespace (e.g., AWS/EC2)
-      metric_name    = optional(string, null) # CloudWatch metric name
-      dimensions     = optional(map(string), {}) # CloudWatch dimensions
-      statistic      = optional(string, "Average") # CloudWatch statistic (Sum, Average, Maximum, etc.)
-      period         = optional(string, "300") # CloudWatch period in seconds
-      region         = optional(string, "default") # CloudWatch region
-      # Common fields
+      metric_expr    = string                # Prometheus query expression
       operator       = optional(string, ">") # >, <, ==, !=, >=, <=
       threshold      = number                # Threshold value
       severity       = string
@@ -55,39 +46,62 @@ variable "alerts" {
       runbook_url    = optional(string, null)
       team           = optional(string, null)
       component      = optional(string, null)
+      slack_labels   = optional(list(string), []) # Prometheus labels to show in Slack (e.g., ["instance", "job", "service"])
       pending_for    = optional(string, "5m")
       no_data_state  = optional(string, "Alerting")
       exec_err_state = optional(string, "Alerting")
     })
   )
+  default = []
 
   validation {
     condition = alltrue([
-      for alert in var.alerts : contains([">", "<", "==", "!=", ">=", "<="], alert.operator)
+      for alert in var.prometheus_alerts : contains([">", "<", "==", "!=", ">=", "<="], alert.operator)
+    ])
+    error_message = "operator must be one of: >, <, ==, !=, >=, <="
+  }
+}
+
+variable "cloudwatch_alerts" {
+  description = "List of CloudWatch alert configurations"
+  type = list(
+    object({
+      name           = string
+      namespace      = string                # AWS namespace (e.g., AWS/EC2)
+      metric_name    = string                # CloudWatch metric name
+      dimensions     = optional(map(string), {}) # CloudWatch dimensions
+      statistic      = optional(string, "Average") # CloudWatch statistic (Sum, Average, Maximum, etc.)
+      period         = optional(string, "300") # CloudWatch period in seconds
+      region         = optional(string, "default") # CloudWatch region
+      reducer        = optional(string, "last") # Reducer function (last, mean, max, min, sum, count, etc.)
+      operator       = optional(string, ">") # >, <, ==, !=, >=, <=
+      threshold      = number                # Threshold value
+      severity       = string
+      description    = optional(string, null)
+      runbook_url    = optional(string, null)
+      team           = optional(string, null)
+      component      = optional(string, null)
+      slack_labels   = optional(list(string), []) # CloudWatch dimensions to show in Slack (e.g., ["InstanceId", "AutoScalingGroupName"])
+      pending_for    = optional(string, "5m")
+      no_data_state  = optional(string, "Alerting")
+      exec_err_state = optional(string, "Alerting")
+    })
+  )
+  default = []
+
+  validation {
+    condition = alltrue([
+      for alert in var.cloudwatch_alerts : contains([">", "<", "==", "!=", ">=", "<="], alert.operator)
     ])
     error_message = "operator must be one of: >, <, ==, !=, >=, <="
   }
 
   validation {
     condition = alltrue([
-      for alert in var.alerts : 
-      (alert.metric_expr != null && alert.namespace == null && alert.metric_name == null) ||
-      (alert.metric_expr == null && alert.namespace != null && alert.metric_name != null)
+      for alert in var.cloudwatch_alerts : contains(["last", "mean", "max", "min", "sum", "count", "diff", "diff_abs", "count_non_null"], alert.reducer)
     ])
-    error_message = "For Prometheus datasources, provide metric_expr. For CloudWatch datasources, provide namespace and metric_name."
+    error_message = "reducer must be one of: last, mean, max, min, sum, count, diff, diff_abs, count_non_null"
   }
-}
-
-variable "grafana_url" {
-  description = "Base URL for Grafana instance"
-  type        = string
-  default     = "https://grafana.company.com"
-}
-
-variable "grafana_api_key" {
-  description = "Grafana API key with permissions to manage alerting"
-  type        = string
-  sensitive   = true
 }
 
 # Optional: Override default notification settings
