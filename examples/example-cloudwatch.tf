@@ -3,14 +3,14 @@ module "cloudwatch_alerts" {
   source = "../"
 
   rule_group_name = "AWS CloudWatch Alerts"
-  grafana_api_key = var.grafana_api_key
-  grafana_url     = var.grafana_url
+
+  folder_uid = "grafana-folder-uid"
 
   # Use CloudWatch datasource
   datasource_uid  = "cloudwatch"
   datasource_type = "cloudwatch"
 
-  alerts = [
+  cloudwatch_alerts = [
     {
       name        = "EC2 Instance Status Check Failed"
       namespace   = "AWS/EC2"
@@ -28,6 +28,7 @@ module "cloudwatch_alerts" {
       runbook_url = "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/monitoring-system-instance-status-check.html"
       team        = "infrastructure"
       component   = "compute"
+      slack_labels = ["InstanceId"]  # Show which instance failed
     },
     {
       name        = "High CPU Utilization"
@@ -39,6 +40,7 @@ module "cloudwatch_alerts" {
       statistic   = "Average"
       period      = "300"
       region      = "default"
+      reducer     = "mean"  # Use mean for CPU utilization over the time window
       operator    = ">"
       threshold   = 80
       severity    = "warning"
@@ -62,6 +64,7 @@ module "cloudwatch_alerts" {
       description = "RDS instance CPU utilization is above 80%"
       team        = "database"
       component   = "rds"
+      slack_labels = ["DBInstanceIdentifier"]  # Show which database instance
     },
     {
       name        = "RDS Low Available Memory"
@@ -73,6 +76,7 @@ module "cloudwatch_alerts" {
       statistic   = "Average"
       period      = "300"
       region      = "default"
+      reducer     = "min"  # Use minimum value to catch the lowest memory point
       operator    = "<"
       threshold   = 1073741824  # 1GB in bytes
       severity    = "critical"

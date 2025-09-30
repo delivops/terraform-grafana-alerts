@@ -3,8 +3,8 @@ module "test_alerts" {
   source = "../"
 
   rule_group_name = "Docker Test Alerts"
-  grafana_api_key = var.grafana_api_key
-  grafana_url     = "http://localhost:3000"
+
+  folder_uid = "grafana-folder-uid"
 
   # Use the provisioned datasource UID for better performance
   datasource_uid  = "prometheus-uid-prod"
@@ -13,14 +13,15 @@ module "test_alerts" {
   slack_api_token = var.slack_api_token
   slack_channel   = var.slack_channel
 
-  alerts = [
+  prometheus_alerts = [
     {
-      name        = "High CPU Usage Test"
-      metric_expr = "100 - (avg(irate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)"
-      operator    = ">"
-      threshold   = 80
-      severity    = "warning"
-      description = "CPU usage is above 80% threshold"
+      name         = "High CPU Usage Test"
+      metric_expr  = "100 - (avg(irate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)"
+      operator     = ">"
+      threshold    = 80
+      severity     = "warning"
+      description  = "CPU usage is above 80% threshold"
+      slack_labels = ["instance", "job"]  # Show which server and job in Slack
     },
     {
       name        = "Node Exporter Down"
@@ -31,13 +32,14 @@ module "test_alerts" {
       description = "Node exporter service is not responding and monitoring data may be unavailable"
     },
     {
-      name        = "High Memory Usage Test"
-      metric_expr = "(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100"
-      runbook_url = "https://example.com/runbooks/high-memory-usage"
-      operator    = ">"
-      threshold   = 90
-      severity    = "warning"
-      description = "Memory usage is above 90% threshold and may cause performance issues"
+      name         = "High Memory Usage Test"
+      metric_expr  = "(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100"
+      runbook_url  = "https://example.com/runbooks/high-memory-usage"
+      operator     = ">"
+      threshold    = 90
+      severity     = "warning"
+      description  = "Memory usage is above 90% threshold and may cause performance issues"
+      slack_labels = ["instance"]  # Only show the server name
     },
     # This will always fire for testing purposes
     {

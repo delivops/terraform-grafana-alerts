@@ -1,21 +1,34 @@
 output "rule_group_id" {
   description = "The ID of the created rule group"
-  value       = length(var.alerts) > 0 ? grafana_rule_group.alerts[0].id : null
+  value       = (length(var.prometheus_alerts) + length(var.cloudwatch_alerts)) > 0 ? grafana_rule_group.alerts[0].id : null
 }
 
 output "rule_group_name" {
   description = "The name of the created rule group"
-  value       = length(var.alerts) > 0 ? grafana_rule_group.alerts[0].name : null
+  value       = (length(var.prometheus_alerts) + length(var.cloudwatch_alerts)) > 0 ? grafana_rule_group.alerts[0].name : null
 }
 
 output "alert_count" {
   description = "Number of alerts configured"
-  value       = length(var.alerts)
+  value       = length(var.prometheus_alerts) + length(var.cloudwatch_alerts)
+}
+
+output "prometheus_alert_count" {
+  description = "Number of Prometheus alerts configured"
+  value       = length(var.prometheus_alerts)
+}
+
+output "cloudwatch_alert_count" {
+  description = "Number of CloudWatch alerts configured"
+  value       = length(var.cloudwatch_alerts)
 }
 
 output "configured_alerts" {
   description = "List of configured alert names"
-  value       = [for alert in var.alerts : alert.name]
+  value       = concat(
+    [for alert in var.prometheus_alerts : alert.name],
+    [for alert in var.cloudwatch_alerts : alert.name]
+  )
 }
 
 output "datasource_uid" {
