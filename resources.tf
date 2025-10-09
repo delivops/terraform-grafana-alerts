@@ -15,7 +15,7 @@ resource "grafana_contact_point" "slack" {
     text      = <<-EOT
 {{ range .Alerts }}
 *Description:* {{ .Annotations.description }}
-*Current Value:* {{ if .Values }} {{ range .Values }}{{ . }}{{ end }} {{ else }} No data {{ end }}
+*Current Value:* {{ if .Values.B }}{{ printf "%.2f" .Values.B }}{{ else }}No data{{ end }}
 *Severity:* {{ .Annotations.severity | toUpper }}
 {{- if .Annotations.slack_labels }}
 {{- $slack_labels := .Annotations.slack_labels }}
