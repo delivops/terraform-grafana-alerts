@@ -134,10 +134,10 @@ variable "elasticsearch_alerts" {
         interval      = optional(string, "auto")
       })
       metric = object({
-        field               = string
+        field               = optional(string, null)
         id                  = string
         precision_threshold = optional(string, null)
-        type                = optional(string, null)
+        type                = string
       })
     })
   )
