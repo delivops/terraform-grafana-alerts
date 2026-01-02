@@ -16,7 +16,39 @@ services:
       - ./grafana/provisioning:/etc/grafana/provisioning
     networks:
       - monitoring
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    container_name: elasticsearch-test
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+    volumes:
+      - elasticsearch-storage:/usr/share/elasticsearch/data
+      - ./elasticsearch/init:/docker-entrypoint-initdb.d
+    networks:
+      - monitoring
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
 
+  elasticsearch-init:
+    image: curlimages/curl:latest
+    container_name: elasticsearch-init-test
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    volumes:
+      - ./elasticsearch/init-data.sh:/init-data.sh
+    command: ["/bin/sh", "/init-data.sh"]
+    networks:
+      - monitoring
+      
   prometheus:
     image: prom/prometheus:latest
     container_name: prometheus-test
@@ -47,6 +79,7 @@ services:
 volumes:
   grafana-storage:
   prometheus-storage:
+  elasticsearch-storage:
 
 networks:
   monitoring:

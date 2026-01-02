@@ -10,3 +10,17 @@ datasources:
     basicAuth: false
     jsonData:
       timeInterval: "30s"
+  - name: elasticsearch
+    type: elasticsearch
+    access: proxy
+    url: http://elasticsearch:9200
+    uid: elasticsearch-uid
+    basicAuth: false
+    jsonData:
+      indexName: "*"
+      timeField: "@timestamp"
+      logMessageField: "message"
+      logLevelField: "level"
+      esVersion: "8.11.0"
+      maxConcurrentShardRequests: 5
+      includeFrozen: false
