@@ -105,7 +105,7 @@ alerts = [
 ]
 ```
 
-### ElasticSearch Alerts
+### Elasticsearch Alerts
 ```hcl
 alerts = [
 {
