@@ -24,7 +24,7 @@ output "cloudwatch_alert_count" {
 }
 
 output "elasticsearch_alert_count" {
-  description = "Number of ElasticSearch alerts configured"
+  description = "Number of Elasticsearch alerts configured"
   value       = length(var.elasticsearch_alerts)
 }
 
