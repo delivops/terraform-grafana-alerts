@@ -260,7 +260,6 @@ resource "grafana_rule_group" "alerts" {
           group_wait      = var.notification_settings.group_wait
           group_interval  = var.notification_settings.group_interval
           repeat_interval = var.notification_settings.repeat_interval
-        
       }
     }
   }
