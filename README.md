@@ -330,7 +330,7 @@ alerts = [
 ]
 ```
 
-### ElasticSearch Monitoring
+### Elasticsearch Monitoring
 ```hcl
 alerts = [
   {
