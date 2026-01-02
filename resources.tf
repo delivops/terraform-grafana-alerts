@@ -285,7 +285,7 @@ resource "grafana_rule_group" "alerts" {
         model = jsonencode({
           bucketAggs = [
             {
-              field = rule.value.aggregation.field // for each aggregation, add a bucketAgg
+              field = rule.value.aggregation.field # for each aggregation, add a bucketAgg
               id    = rule.value.aggregation.id
               settings = {
                 min_doc_count = tonumber(rule.value.aggregation.min_doc_count)
