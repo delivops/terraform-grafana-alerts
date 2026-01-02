@@ -290,6 +290,10 @@ resource "grafana_rule_group" "alerts" {
               settings = {
                 min_doc_count = tonumber(rule.value.aggregation.min_doc_count)
                 interval      = rule.value.aggregation.interval
+                order         = rule.value.aggregation.order
+                orderBy       = rule.value.aggregation.orderBy
+                size          = rule.value.aggregation.size
+                missing       = rule.value.aggregation.missing
               }
               type = rule.value.aggregation.type
             }
