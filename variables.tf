@@ -136,8 +136,8 @@ variable "elasticsearch_alerts" {
       metric = object({
         field               = string
         id                  = string
-        precision_threshold = string
-        type                = string
+        precision_threshold = optional(string, null)
+        type                = optional(string, null)
       })
     })
   )
