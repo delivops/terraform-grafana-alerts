@@ -386,12 +386,12 @@ resource "grafana_rule_group" "alerts" {
         component = rule.value.component != null ? rule.value.component : null
       }
 
-       notification_settings {
-          contact_point   = var.contact_point_name != null ? var.contact_point_name : grafana_contact_point.slack[0].name
-          group_by        = var.notification_settings.group_by
-          group_wait      = var.notification_settings.group_wait
-          group_interval  = var.notification_settings.group_interval
-          repeat_interval = var.notification_settings.repeat_interval
+      notification_settings {
+        contact_point   = var.contact_point_name != null ? var.contact_point_name : grafana_contact_point.slack[0].name
+        group_by        = var.notification_settings.group_by
+        group_wait      = var.notification_settings.group_wait
+        group_interval  = var.notification_settings.group_interval
+        repeat_interval = var.notification_settings.repeat_interval
       }
     }
   }
