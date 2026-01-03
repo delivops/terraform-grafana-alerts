@@ -3,6 +3,25 @@ variable "rule_group_name" {
   type        = string
 }
 
+variable "shoud_send_to_telegram" {
+  description = "shoud send alert to telegram boolean"
+  type        = bool
+  default     = false
+}
+
+variable "telegram_api_token" {
+  description = "telegra Bot User Token. Get from https://t.me/botfather"
+  type        = string
+  default     = null # Optional for testing
+  sensitive   = true
+}
+
+variable "telegram_channel" {
+  description = "telegram channel to send alerts to"
+  type        = string
+  default     = ""
+}
+
 variable "folder_uid" {
   description = "Uid of the Grafana folder to place the rule group in. If null, a new folder named after the rule_group_name will be created."
   type        = string
