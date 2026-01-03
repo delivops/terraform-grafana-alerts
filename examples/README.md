@@ -10,7 +10,7 @@ The `example.tf` file demonstrates setting up alerts with a local Prometheus ins
 
 1. Start the stack:
    ```bash
-   make up
+   make start
    ```
 
 2. Configure your variables:
@@ -31,6 +31,12 @@ The `example.tf` file demonstrates setting up alerts with a local Prometheus ins
    ```bash
    make down
    ```
+
+### Services Included
+- **Grafana**: http://localhost:3000 (admin/admin)
+- **Prometheus**: http://localhost:9090
+- **Elasticsearch**: http://localhost:9200 (with auto-populated test data)
+- **Node Exporter**: http://localhost:9100/metrics
 
 ## CloudWatch Example
 
@@ -95,6 +101,41 @@ alerts = [
     operator    = ">"
     threshold   = 80
     severity    = "warning"
+  }
+]
+```
+
+### Elasticsearch Alerts
+```hcl
+alerts = [
+{
+    name        = "Elasticsearch High Error Rate"
+    index       = "elasticsearch-logs"
+    query       = "level:ERROR"
+    aggregation = {
+      field          = "@timestamp"
+      id             = "2"
+      min_doc_count  = "0"
+      order          = "asc"
+      orderBy        = "_count"
+      size           = "0"
+      missing        = ""
+      type           = "date_histogram"
+      interval       = "1m"
+    }
+    metric = {
+      field               = "_count"
+      id                  = "1"
+      precision_threshold = ""
+      type                = "count"
+    }
+    operator    = ">"
+    threshold   = 1
+    pending_for = "10s"
+    severity    = "critical"
+    description = "Elasticsearch has high error rate (TEST ALERT)"
+    team        = "platform"
+    component   = "elasticsearch"
   }
 ]
 ```

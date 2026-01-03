@@ -104,6 +104,53 @@ variable "cloudwatch_alerts" {
   }
 }
 
+variable "elasticsearch_alerts" {
+  description = "List of Elasticsearch alert configurations"
+  type = list(
+    object({
+      name           = string
+      index          = string                # Elasticsearch index
+      query          = string                # Elasticsearch query
+      operator       = optional(string, ">") # >, <, ==, !=, >=, <=
+      threshold      = number                # Threshold value
+      severity       = string
+      description    = optional(string, null)
+      runbook_url    = optional(string, null)
+      team           = optional(string, null)
+      component      = optional(string, null)
+      slack_labels   = optional(list(string), []) # Elasticsearch labels to show in Slack (e.g., ["index", "type", "id"])
+      pending_for    = optional(string, "5m")
+      no_data_state  = optional(string, "Alerting")
+      exec_err_state = optional(string, "Alerting")
+      aggregation = object({
+        field         = string
+        id            = string
+        min_doc_count = string
+        order         = string
+        orderBy       = string
+        size          = string
+        missing       = string
+        type          = string
+        interval      = optional(string, "auto")
+      })
+      metric = object({
+        field               = optional(string, null)
+        id                  = string
+        precision_threshold = optional(string, null)
+        type                = string
+      })
+    })
+  )
+  default = []
+
+  validation {
+    condition = alltrue([
+      for alert in var.elasticsearch_alerts : contains([">", "<", "==", "!=", ">=", "<="], alert.operator)
+    ])
+    error_message = "operator must be one of: >, <, ==, !=, >=, <="
+  }
+}
+
 # Optional: Override default notification settings
 variable "notification_settings" {
   description = "Notification settings for alerts"

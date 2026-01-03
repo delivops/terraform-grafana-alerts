@@ -36,7 +36,7 @@ EOT
 
 
 resource "grafana_rule_group" "alerts" {
-  count            = (length(var.prometheus_alerts) + length(var.cloudwatch_alerts)) > 0 ? 1 : 0
+  count            = (length(var.prometheus_alerts) + length(var.cloudwatch_alerts) + length(var.elasticsearch_alerts)) > 0 ? 1 : 0
   name             = var.rule_group_name
   folder_uid       = var.folder_uid != null ? var.folder_uid : grafana_folder.folder[0].uid
   interval_seconds = 60
@@ -145,12 +145,12 @@ resource "grafana_rule_group" "alerts" {
         component = rule.value.component != null ? rule.value.component : null
       }
 
-      notification_settings {
-        contact_point   = var.contact_point_name != null ? var.contact_point_name : grafana_contact_point.slack[0].name
-        group_by        = var.notification_settings.group_by
-        group_wait      = var.notification_settings.group_wait
-        group_interval  = var.notification_settings.group_interval
-        repeat_interval = var.notification_settings.repeat_interval
+       notification_settings {
+          contact_point   = var.contact_point_name != null ? var.contact_point_name : grafana_contact_point.slack[0].name
+          group_by        = var.notification_settings.group_by
+          group_wait      = var.notification_settings.group_wait
+          group_interval  = var.notification_settings.group_interval
+          repeat_interval = var.notification_settings.repeat_interval
       }
     }
   }
@@ -246,6 +246,141 @@ resource "grafana_rule_group" "alerts" {
         runbook_url = rule.value.runbook_url != null ? rule.value.runbook_url : null
         severity    = rule.value.severity
         slack_labels = join("|", rule.value.slack_labels)  # Convert list to pipe-separated regex pattern
+      }
+
+      labels = {
+        priority  = local.severity_map[rule.value.severity]
+        team      = rule.value.team != null ? rule.value.team : null
+        component = rule.value.component != null ? rule.value.component : null
+      }
+
+      notification_settings {
+          contact_point   = var.contact_point_name != null ? var.contact_point_name : grafana_contact_point.slack[0].name
+          group_by        = var.notification_settings.group_by
+          group_wait      = var.notification_settings.group_wait
+          group_interval  = var.notification_settings.group_interval
+          repeat_interval = var.notification_settings.repeat_interval
+      }
+    }
+  }
+  # Elasticsearch alerts
+  dynamic "rule" {
+    for_each = var.elasticsearch_alerts
+    content {
+      name           = rule.value.name
+      condition      = "C"
+      for            = rule.value.pending_for
+      no_data_state  = rule.value.no_data_state
+      exec_err_state = rule.value.exec_err_state
+
+      # Query A: Elasticsearch query calculation
+      data {
+        ref_id = "A"
+        relative_time_range {
+          from = 600
+          to   = 0
+        }
+        datasource_uid = local.datasource_uid
+        model = jsonencode({
+          bucketAggs = [
+            {
+              field = rule.value.aggregation.field # for each aggregation, add a bucketAgg
+              id    = rule.value.aggregation.id
+              settings = {
+                min_doc_count = tonumber(rule.value.aggregation.min_doc_count)
+                interval      = rule.value.aggregation.interval
+                order         = rule.value.aggregation.order
+                orderBy       = rule.value.aggregation.orderBy
+                size          = rule.value.aggregation.size
+                missing       = rule.value.aggregation.missing
+              }
+              type = rule.value.aggregation.type
+            }
+          ]
+          metrics = [
+            {
+              field = rule.value.metric.field
+              id    = rule.value.metric.id
+              settings = {
+                precision_threshold = rule.value.metric.precision_threshold
+              }
+              type = rule.value.metric.type
+            }
+          ]
+          datasource = {
+            type = "elasticsearch"
+            uid  = local.datasource_uid
+          }
+          queryType = "lucene"
+          timeField = rule.value.aggregation.field
+          index     = rule.value.index
+          query     = rule.value.query
+          refId     = "A"
+        })
+      }
+
+      # Query B: Reduce - get single value per series (preserves labels)
+      data {
+        ref_id = "B"
+        relative_time_range {
+          from = 0
+          to   = 0
+        }
+        datasource_uid = "__expr__"
+        model = jsonencode({
+          datasource = {
+            type = "__expr__"
+            uid  = "__expr__"
+          }
+          expression = "A"
+          reducer    = "sum"
+          settings = {
+            mode             = "replaceNN"
+            replaceWithValue = 0
+          }
+          refId = "B"
+          type  = "reduce"
+        })
+      }
+
+      # Query C: The threshold comparison
+      data {
+        ref_id = "C"
+        relative_time_range {
+          from = 0
+          to   = 0
+        }
+        datasource_uid = "__expr__"
+        model = jsonencode({
+          datasource = {
+            type = "__expr__"
+            uid  = "__expr__"
+          }
+          expression = "B"
+          conditions = [
+            {
+              evaluator = {
+                params = [rule.value.threshold]
+                type = (rule.value.operator == ">" ? "gt" :
+                  rule.value.operator == "<" ? "lt" :
+                  rule.value.operator == ">=" ? "gte" :
+                  rule.value.operator == "<=" ? "lte" :
+                  rule.value.operator == "==" ? "eq" :
+                rule.value.operator == "!=" ? "neq" : "gt")
+              }
+            }
+          ]
+          refId = "C"
+          type  = "threshold"
+        })
+      }
+
+      # Opinionated production-ready annotations
+      annotations = {
+        description  = rule.value.description != null ? rule.value.description : "Alert: ${rule.value.name}"
+        runbook_url  = rule.value.runbook_url != null ? rule.value.runbook_url : null
+        severity     = rule.value.severity
+        slack_labels = join("|", rule.value.slack_labels) # Convert list to pipe-separated string
       }
 
       labels = {

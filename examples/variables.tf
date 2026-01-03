@@ -1,7 +1,14 @@
 variable "slack_api_token" {
   description = "Slack Bot User OAuth Token (xoxb-...). Get from https://api.slack.com/apps"
   type        = string
+  default     = null
   sensitive   = true
+}
+
+variable "contact_point_name" {
+  description = "Name of the contact point to use for notifications. Required if not creating a new Slack contact point."
+  type        = string
+  default     = null
 }
 
 variable "slack_channel" {

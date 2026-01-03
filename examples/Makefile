@@ -4,7 +4,6 @@
 start:
 	docker-compose up -d
 	@echo "Waiting for services to start..."
-	@sleep 30
 	@echo "✅ Stack started! Grafana: http://localhost:3000 (admin/admin)"
 
 # Stop the stack
@@ -46,6 +45,8 @@ demo: test
 	@echo "🎯 Demo Environment Ready!"
 	@echo "📊 Grafana UI: http://localhost:3000 (admin/admin)"
 	@echo "📈 Prometheus: http://localhost:9090"
+	@echo "🔍 Elasticsearch: http://localhost:9200"
 	@echo "⚡ Node Exporter: http://localhost:9100/metrics"
 	@echo ""
 	@echo "📋 Check your alerts at: http://localhost:3000/alerting/list"
+	@echo "📊 Explore Elasticsearch data at: http://localhost:3000/explore (select Elasticsearch datasource)"
