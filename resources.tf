@@ -34,6 +34,36 @@ EOT
   }
 }
 
+resource "grafana_contact_point" "telegram" {
+  count = var.shoud_send_to_telegram == null ? 1 : 0
+  name  = var.rule_group_name
+
+  telegram {
+    token     = var.telegram_api_token
+    chat_id = var.telegram_channel
+    message   = <<-EOT
+[{{ .Status | toUpper }}] {{ .GroupLabels.alertname }}{{ if .CommonLabels.priority }} - {{ .CommonLabels.priority | toUpper }}{{ end }}
+{{ range .Alerts }}
+*Description:* {{ .Annotations.description }}
+*Current Value:* {{ if .Values.B }}{{ printf "%.2f" .Values.B }}{{ else }}No data{{ end }}
+*Severity:* {{ .Annotations.severity | toUpper }}
+{{- if .Annotations.slack_labels }}
+{{- $slack_labels := .Annotations.slack_labels }}
+{{- $system_labels := "alertname|grafana_folder|__name__|priority|team|component" }}
+{{- range .Labels.SortedPairs }}
+{{- if and (match $slack_labels .Name) (not (match $system_labels .Name)) }}
+*{{ .Name | title }}:* {{ .Value }}
+{{- end }}
+{{- end }}
+{{- end }}
+*Started at:* {{ .StartsAt | date "02-01-2006 15:04:05" }}
+
+*<{{ .SilenceURL }}|Silence This Alert>*{{ if .Annotations.runbook_url }} | *<{{ .Annotations.runbook_url }}|View Runbook>*{{ end }}
+{{ end }}
+EOT
+  }
+}
+
 
 resource "grafana_rule_group" "alerts" {
   count            = (length(var.prometheus_alerts) + length(var.cloudwatch_alerts) + length(var.elasticsearch_alerts)) > 0 ? 1 : 0
