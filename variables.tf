@@ -122,7 +122,8 @@ variable "elasticsearch_alerts" {
       pending_for    = optional(string, "5m")
       no_data_state  = optional(string, "Alerting")
       exec_err_state = optional(string, "Alerting")
-      aggregation = object({
+      time_field     = optional(string, "@timestamp") # Field used as the time field on the index (e.g., "@timestamp")
+      aggregation = list(object({
         field         = string
         id            = string
         min_doc_count = string
@@ -132,7 +133,7 @@ variable "elasticsearch_alerts" {
         missing       = string
         type          = string
         interval      = optional(string, "auto")
-      })
+      }))
       metric = object({
         field               = optional(string, null)
         id                  = string

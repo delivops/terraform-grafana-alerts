@@ -283,18 +283,18 @@ resource "grafana_rule_group" "alerts" {
         datasource_uid = local.datasource_uid
         model = jsonencode({
           bucketAggs = [
-            {
-              field = rule.value.aggregation.field # for each aggregation, add a bucketAgg
-              id    = rule.value.aggregation.id
+            for agg in rule.value.aggregation : {
+              field = agg.field
+              id    = agg.id
               settings = {
-                min_doc_count = tonumber(rule.value.aggregation.min_doc_count)
-                interval      = rule.value.aggregation.interval
-                order         = rule.value.aggregation.order
-                orderBy       = rule.value.aggregation.orderBy
-                size          = rule.value.aggregation.size
-                missing       = rule.value.aggregation.missing
+                min_doc_count = tonumber(agg.min_doc_count)
+                interval      = agg.interval
+                order         = agg.order
+                orderBy       = agg.orderBy
+                size          = agg.size
+                missing       = agg.missing
               }
-              type = rule.value.aggregation.type
+              type = agg.type
             }
           ]
           metrics = [
@@ -312,7 +312,7 @@ resource "grafana_rule_group" "alerts" {
             uid  = local.datasource_uid
           }
           queryType = "lucene"
-          timeField = rule.value.aggregation.field
+          timeField = rule.value.time_field
           index     = rule.value.index
           query     = rule.value.query
           refId     = "A"
