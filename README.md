@@ -339,16 +339,19 @@ alerts = [
     name        = "Elasticsearch High Error Rate"
     index       = "elasticsearch-*"
     query       = "level:ERROR"
-    aggregation = {
-      field          = "@timestamp"
-      id             = "2"
-      min_doc_count  = "1"
-      order          = "desc"
-      orderBy        = "_count"
-      size           = "0"
-      missing        = ""
-      type           = "date_histogram"
-    }
+    time_field  = "@timestamp"
+    aggregation = [
+      {
+        field         = "@timestamp"
+        id            = "2"
+        min_doc_count = "1"
+        order         = "desc"
+        orderBy       = "_count"
+        size          = "0"
+        missing       = ""
+        type          = "date_histogram"
+      }
+    ]
     metric = {
       field               = "_count"
       id                  = "1"
@@ -366,16 +369,29 @@ alerts = [
     name        = "Elasticsearch Slow Query Performance"
     index       = "elasticsearch-*"
     query       = "took:[5000 TO *]"
-    aggregation = {
-      field          = "@timestamp"
-      id             = "2"
-      min_doc_count  = "1"
-      order          = "desc"
-      orderBy        = "_count"
-      size           = "0"
-      missing        = ""
-      type           = "date_histogram"
-    }
+    time_field  = "@timestamp"
+    aggregation = [
+      {
+        field         = "@timestamp"
+        id            = "2"
+        min_doc_count = "1"
+        order         = "desc"
+        orderBy       = "_count"
+        size          = "0"
+        missing       = ""
+        type          = "date_histogram"
+      },
+      {
+        field         = "host.name"
+        id            = "3"
+        min_doc_count = "1"
+        order         = "desc"
+        orderBy       = "_count"
+        size          = "10"
+        missing       = ""
+        type          = "terms"
+      }
+    ]
     metric = {
       field               = "took"
       id                  = "1"
