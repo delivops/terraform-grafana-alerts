@@ -11,6 +11,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          # a PR from a fork has its branch in the fork, not in this repo
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
           ref: ${{ github.event.pull_request.head.ref }}
 
       - name: Render terraform docs and push changes back to PR
@@ -19,4 +21,6 @@ jobs:
           working-dir: .
           output-file: README.md
           output-method: inject
-          git-push: "true"
+          # this repo's token can't push to a fork, so a fork PR fails when its README is not up to date instead
+          git-push: ${{ github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository }}
+          fail-on-diff: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}

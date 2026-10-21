@@ -186,6 +186,22 @@ For CloudWatch datasources, provide:
 - **period**: Aggregation period in seconds (default: `"300"`)
 - **region**: AWS region (default: `"default"`)
 
+### CloudWatch Logs Alerts
+For CloudWatch Logs Insights, use `cloudwatch_logs_alerts` with the CloudWatch datasource and provide:
+- **log_groups**: Log group names or ARNs (e.g., `["/aws/opensearch/prod/search-slow"]`)
+- **query**: Logs Insights query that ends with a numeric `stats` command (e.g., `filter @message like /WARN/ | stats count(*) as slow`)
+- **stats_groups**: `stats ... by` fields to keep as alert labels (default: `[]`). A query that groups by a field must also group by `bin()`, for example `stats count(*) by bin(5m), index`
+- **time_range**: Query time range in seconds (default: `600`)
+- **region**: AWS region (default: `"default"`)
+- **no_data_state**: defaults to `"OK"` for logs alerts, because a query with no matching log lines returns no data instead of 0
+
+Notes:
+- Prefer a single `stats` over the whole `time_range` (no `bin()`) when you don't need labels. With `bin()` and the default `reducer = "last"`, the last bin is the current, partial one.
+- Rules are evaluated every 60 seconds, and each evaluation scans the whole `time_range` of logs. Logs Insights bills per GB scanned, so keep `time_range` as small as the alert allows.
+- `log_groups` takes names (sent as `logGroupNames`, same account as the datasource) or ARNs (sent as `logGroups`, needed for cross-account log groups), not both in one alert.
+
+See [examples/example-cloudwatch-logs.tf](examples/example-cloudwatch-logs.tf).
+
 ## Alert Fields
 
 ### Required (All Datasources)
@@ -200,6 +216,10 @@ For CloudWatch datasources, provide:
 ### Required (CloudWatch)
 - **namespace**: AWS namespace
 - **metric_name**: CloudWatch metric name
+
+### Required (CloudWatch Logs)
+- **log_groups**: Log group names or ARNs
+- **query**: Logs Insights query ending with a numeric `stats` command
 
 ### Production Enhancements (Optional)
 - **description**: Human-readable alert context
@@ -254,6 +274,7 @@ No modules.
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
 | <a name="input_cloudwatch_alerts"></a> [cloudwatch\_alerts](#input\_cloudwatch\_alerts) | List of CloudWatch alert configurations | <pre>list(<br/>    object({<br/>      name           = string<br/>      namespace      = string                # AWS namespace (e.g., AWS/EC2)<br/>      metric_name    = string                # CloudWatch metric name<br/>      dimensions     = optional(map(string), {}) # CloudWatch dimensions<br/>      statistic      = optional(string, "Average") # CloudWatch statistic (Sum, Average, Maximum, etc.)<br/>      period         = optional(string, "300") # CloudWatch period in seconds<br/>      region         = optional(string, "default") # CloudWatch region<br/>      reducer        = optional(string, "last") # Reducer function (last, mean, max, min, sum, count, etc.)<br/>      operator       = optional(string, ">") # >, <, ==, !=, >=, <=<br/>      threshold      = number                # Threshold value<br/>      severity       = string<br/>      description    = optional(string, null)<br/>      runbook_url    = optional(string, null)<br/>      team           = optional(string, null)<br/>      component      = optional(string, null)<br/>      slack_labels   = optional(list(string), []) # CloudWatch dimensions to show in Slack (e.g., ["InstanceId", "AutoScalingGroupName"])<br/>      pending_for    = optional(string, "5m")<br/>      no_data_state  = optional(string, "Alerting")<br/>      exec_err_state = optional(string, "Alerting")<br/>    })<br/>  )</pre> | `[]` | no |
+| <a name="input_cloudwatch_logs_alerts"></a> [cloudwatch\_logs\_alerts](#input\_cloudwatch\_logs\_alerts) | List of CloudWatch Logs Insights alert configurations | <pre>list(<br/>    object({<br/>      name           = string<br/>      log_groups     = list(string)                # Log group names or ARNs (ARNs are needed for cross-account log groups)<br/>      query          = string                      # Logs Insights query, must end with a numeric stats command<br/>      stats_groups   = optional(list(string), [])  # stats "by" fields to keep as alert labels (e.g., ["index"])<br/>      region         = optional(string, "default") # CloudWatch region<br/>      time_range     = optional(number, 600)       # Query time range in seconds<br/>      reducer        = optional(string, "last")    # Reducer function (last, mean, max, min, sum, count, etc.)<br/>      operator       = optional(string, ">")       # >, <, ==, !=, >=, <=<br/>      threshold      = number                      # Threshold value<br/>      severity       = string<br/>      description    = optional(string, null)<br/>      runbook_url    = optional(string, null)<br/>      team           = optional(string, null)<br/>      component      = optional(string, null)<br/>      slack_labels   = optional(list(string), []) # stats_groups to show in Slack (e.g., ["index"])<br/>      pending_for    = optional(string, "5m")<br/>      no_data_state  = optional(string, "OK") # A query with no matching log lines returns no data, not 0<br/>      exec_err_state = optional(string, "Alerting")<br/>    })<br/>  )</pre> | `[]` | no |
 | <a name="input_contact_point_name"></a> [contact\_point\_name](#input\_contact\_point\_name) | Name of the contact point to use for notifications. Required if not creating a new Slack contact point. | `string` | `null` | no |
 | <a name="input_datasource_name"></a> [datasource\_name](#input\_datasource\_name) | Name of the Grafana datasource to use for alerts | `string` | `null` | no |
 | <a name="input_datasource_type"></a> [datasource\_type](#input\_datasource\_type) | Type of the datasource (e.g., prometheus, loki, influxdb, etc.) | `string` | `"prometheus"` | no |
@@ -272,6 +293,7 @@ No modules.
 |------|-------------|
 | <a name="output_alert_count"></a> [alert\_count](#output\_alert\_count) | Number of alerts configured |
 | <a name="output_cloudwatch_alert_count"></a> [cloudwatch\_alert\_count](#output\_cloudwatch\_alert\_count) | Number of CloudWatch alerts configured |
+| <a name="output_cloudwatch_logs_alert_count"></a> [cloudwatch\_logs\_alert\_count](#output\_cloudwatch\_logs\_alert\_count) | Number of CloudWatch Logs alerts configured |
 | <a name="output_configured_alerts"></a> [configured\_alerts](#output\_configured\_alerts) | List of configured alert names |
 | <a name="output_datasource_uid"></a> [datasource\_uid](#output\_datasource\_uid) | UID of the datasource used for alerts |
 | <a name="output_elasticsearch_alert_count"></a> [elasticsearch\_alert\_count](#output\_elasticsearch\_alert\_count) | Number of Elasticsearch alerts configured |
