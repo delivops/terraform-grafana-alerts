@@ -24,7 +24,8 @@ module "cloudwatch_logs_alerts" {
       component   = "opensearch"
     },
     {
-      # Group by a field: the query must also group by bin() so every group becomes its own series
+      # Group by a field: the query must also group by bin() so every group becomes its own series.
+      # The bins are not aligned to the time range, so the sum covers the whole range plus part of one bin.
       name         = "OpenSearch Slow Searches By Index"
       log_groups   = ["/aws/opensearch/prod/search-slow"]
       query        = "parse @message /indices\\[(?<index>[^\\]]*)\\]/ | filter @message like /WARN/ | stats count(*) as slow_searches by bin(5m), index"
@@ -34,7 +35,7 @@ module "cloudwatch_logs_alerts" {
       operator     = ">"
       threshold    = 50
       severity     = "warning"
-      description  = "More than 50 slow searches on one index in the last 15 minutes"
+      description  = "More than 50 slow searches on one index in about the last 15 minutes"
       slack_labels = ["index"] # Show which index is slow
     },
     {
@@ -47,7 +48,6 @@ module "cloudwatch_logs_alerts" {
       threshold      = 10
       severity       = "error"
       description    = "More than 10 errors in a 5 minute window"
-      no_data_state  = "OK" # No matching log lines means no errors
       exec_err_state = "KeepLast"
     }
   ]

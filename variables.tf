@@ -124,7 +124,7 @@ variable "cloudwatch_logs_alerts" {
       component      = optional(string, null)
       slack_labels   = optional(list(string), []) # stats_groups to show in Slack (e.g., ["index"])
       pending_for    = optional(string, "5m")
-      no_data_state  = optional(string, "Alerting")
+      no_data_state  = optional(string, "OK") # A query with no matching log lines returns no data, not 0
       exec_err_state = optional(string, "Alerting")
     })
   )
@@ -142,6 +142,13 @@ variable "cloudwatch_logs_alerts" {
       for alert in var.cloudwatch_logs_alerts : contains(["last", "mean", "max", "min", "sum", "count", "diff", "diff_abs", "count_non_null"], alert.reducer)
     ])
     error_message = "reducer must be one of: last, mean, max, min, sum, count, diff, diff_abs, count_non_null"
+  }
+
+  validation {
+    condition = alltrue([
+      for alert in var.cloudwatch_logs_alerts : alert.time_range >= 60 && alert.time_range <= 86400
+    ])
+    error_message = "time_range must be between 60 and 86400 seconds"
   }
 
   validation {
