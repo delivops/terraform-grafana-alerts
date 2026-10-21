@@ -188,7 +188,7 @@ For CloudWatch datasources, provide:
 
 ### CloudWatch Logs Alerts
 For CloudWatch Logs Insights, use `cloudwatch_logs_alerts` with the CloudWatch datasource and provide:
-- **log_groups**: Log group names (e.g., `["/aws/opensearch/prod/search-slow"]`)
+- **log_groups**: Log group names or ARNs (e.g., `["/aws/opensearch/prod/search-slow"]`)
 - **query**: Logs Insights query that ends with a numeric `stats` command (e.g., `filter @message like /WARN/ | stats count(*) as slow`)
 - **stats_groups**: `stats ... by` fields to keep as alert labels (default: `[]`). A query that groups by a field must also group by `bin()`, for example `stats count(*) by bin(5m), index`
 - **time_range**: Query time range in seconds (default: `600`)
@@ -198,7 +198,7 @@ For CloudWatch Logs Insights, use `cloudwatch_logs_alerts` with the CloudWatch d
 Notes:
 - Prefer a single `stats` over the whole `time_range` (no `bin()`) when you don't need labels. With `bin()` and the default `reducer = "last"`, the last bin is the current, partial one.
 - Rules are evaluated every 60 seconds, and each evaluation scans the whole `time_range` of logs. Logs Insights bills per GB scanned, so keep `time_range` as small as the alert allows.
-- Log groups are sent as names (`logGroupNames`), so they must be in the account of the CloudWatch datasource.
+- `log_groups` takes names (sent as `logGroupNames`, same account as the datasource) or ARNs (sent as `logGroups`, needed for cross-account log groups), not both in one alert.
 
 See [examples/example-cloudwatch-logs.tf](examples/example-cloudwatch-logs.tf).
 
@@ -218,7 +218,7 @@ See [examples/example-cloudwatch-logs.tf](examples/example-cloudwatch-logs.tf).
 - **metric_name**: CloudWatch metric name
 
 ### Required (CloudWatch Logs)
-- **log_groups**: Log group names
+- **log_groups**: Log group names or ARNs
 - **query**: Logs Insights query ending with a numeric `stats` command
 
 ### Production Enhancements (Optional)

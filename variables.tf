@@ -109,7 +109,7 @@ variable "cloudwatch_logs_alerts" {
   type = list(
     object({
       name           = string
-      log_groups     = list(string)                # Log group names (e.g., /aws/opensearch/prod/search-slow)
+      log_groups     = list(string)                # Log group names or ARNs (ARNs are needed for cross-account log groups)
       query          = string                      # Logs Insights query, must end with a numeric stats command
       stats_groups   = optional(list(string), [])  # stats "by" fields to keep as alert labels (e.g., ["index"])
       region         = optional(string, "default") # CloudWatch region
@@ -156,6 +156,13 @@ variable "cloudwatch_logs_alerts" {
       for alert in var.cloudwatch_logs_alerts : length(alert.log_groups) > 0
     ])
     error_message = "log_groups must contain at least one log group name"
+  }
+
+  validation {
+    condition = alltrue([
+      for alert in var.cloudwatch_logs_alerts : alltrue([for log_group in alert.log_groups : startswith(log_group, "arn:")]) || alltrue([for log_group in alert.log_groups : !startswith(log_group, "arn:")])
+    ])
+    error_message = "log_groups must be all names or all ARNs, Grafana ignores the names when ARNs are set"
   }
 }
 

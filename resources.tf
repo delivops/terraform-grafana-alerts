@@ -41,6 +41,13 @@ resource "grafana_rule_group" "alerts" {
   folder_uid       = var.folder_uid != null ? var.folder_uid : grafana_folder.folder[0].uid
   interval_seconds = 60
 
+  lifecycle {
+    precondition {
+      condition     = length(var.cloudwatch_logs_alerts) == 0 || var.datasource_type == "cloudwatch"
+      error_message = "cloudwatch_logs_alerts need datasource_type = \"cloudwatch\""
+    }
+  }
+
   # Prometheus alerts
   dynamic "rule" {
     for_each = var.prometheus_alerts
@@ -117,12 +124,7 @@ resource "grafana_rule_group" "alerts" {
             {
               evaluator = {
                 params = [rule.value.threshold]
-                type = (rule.value.operator == ">" ? "gt" :
-                  rule.value.operator == "<" ? "lt" :
-                  rule.value.operator == ">=" ? "gte" :
-                  rule.value.operator == "<=" ? "lte" :
-                  rule.value.operator == "==" ? "eq" :
-                rule.value.operator == "!=" ? "neq" : "gt")
+                type   = lookup(local.operator_map, rule.value.operator, "gt")
               }
             }
           ]
@@ -226,12 +228,7 @@ resource "grafana_rule_group" "alerts" {
             {
               evaluator = {
                 params = [rule.value.threshold]
-                type = (rule.value.operator == ">" ? "gt" :
-                  rule.value.operator == "<" ? "lt" :
-                  rule.value.operator == ">=" ? "gte" :
-                  rule.value.operator == "<=" ? "lte" :
-                  rule.value.operator == "==" ? "eq" :
-                rule.value.operator == "!=" ? "neq" : "gt")
+                type   = lookup(local.operator_map, rule.value.operator, "gt")
               }
             }
           ]
@@ -289,7 +286,13 @@ resource "grafana_rule_group" "alerts" {
           queryMode     = "Logs"
           queryLanguage = "CWLI"
           expression    = rule.value.query
-          logGroupNames = rule.value.log_groups
+          logGroupNames = [for log_group in rule.value.log_groups : log_group if !startswith(log_group, "arn:")]
+          logGroups = [
+            for log_group in rule.value.log_groups : {
+              arn  = log_group
+              name = replace(replace(log_group, "/^arn:.*:log-group:/", ""), "/:\\*$/", "")
+            } if startswith(log_group, "arn:")
+          ]
           statsGroups   = rule.value.stats_groups
           region        = rule.value.region
           id            = ""
@@ -335,12 +338,7 @@ resource "grafana_rule_group" "alerts" {
             {
               evaluator = {
                 params = [rule.value.threshold]
-                type = (rule.value.operator == ">" ? "gt" :
-                  rule.value.operator == "<" ? "lt" :
-                  rule.value.operator == ">=" ? "gte" :
-                  rule.value.operator == "<=" ? "lte" :
-                  rule.value.operator == "==" ? "eq" :
-                rule.value.operator == "!=" ? "neq" : "gt")
+                type   = lookup(local.operator_map, rule.value.operator, "gt")
               }
             }
           ]
@@ -471,12 +469,7 @@ resource "grafana_rule_group" "alerts" {
             {
               evaluator = {
                 params = [rule.value.threshold]
-                type = (rule.value.operator == ">" ? "gt" :
-                  rule.value.operator == "<" ? "lt" :
-                  rule.value.operator == ">=" ? "gte" :
-                  rule.value.operator == "<=" ? "lte" :
-                  rule.value.operator == "==" ? "eq" :
-                rule.value.operator == "!=" ? "neq" : "gt")
+                type   = lookup(local.operator_map, rule.value.operator, "gt")
               }
             }
           ]
