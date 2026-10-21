@@ -104,6 +104,54 @@ variable "cloudwatch_alerts" {
   }
 }
 
+variable "cloudwatch_logs_alerts" {
+  description = "List of CloudWatch Logs Insights alert configurations"
+  type = list(
+    object({
+      name           = string
+      log_groups     = list(string)                # Log group names (e.g., /aws/opensearch/prod/search-slow)
+      query          = string                      # Logs Insights query, must end with a numeric stats command
+      stats_groups   = optional(list(string), [])  # stats "by" fields to keep as alert labels (e.g., ["index"])
+      region         = optional(string, "default") # CloudWatch region
+      time_range     = optional(number, 600)       # Query time range in seconds
+      reducer        = optional(string, "last")    # Reducer function (last, mean, max, min, sum, count, etc.)
+      operator       = optional(string, ">")       # >, <, ==, !=, >=, <=
+      threshold      = number                      # Threshold value
+      severity       = string
+      description    = optional(string, null)
+      runbook_url    = optional(string, null)
+      team           = optional(string, null)
+      component      = optional(string, null)
+      slack_labels   = optional(list(string), []) # stats_groups to show in Slack (e.g., ["index"])
+      pending_for    = optional(string, "5m")
+      no_data_state  = optional(string, "Alerting")
+      exec_err_state = optional(string, "Alerting")
+    })
+  )
+  default = []
+
+  validation {
+    condition = alltrue([
+      for alert in var.cloudwatch_logs_alerts : contains([">", "<", "==", "!=", ">=", "<="], alert.operator)
+    ])
+    error_message = "operator must be one of: >, <, ==, !=, >=, <="
+  }
+
+  validation {
+    condition = alltrue([
+      for alert in var.cloudwatch_logs_alerts : contains(["last", "mean", "max", "min", "sum", "count", "diff", "diff_abs", "count_non_null"], alert.reducer)
+    ])
+    error_message = "reducer must be one of: last, mean, max, min, sum, count, diff, diff_abs, count_non_null"
+  }
+
+  validation {
+    condition = alltrue([
+      for alert in var.cloudwatch_logs_alerts : length(alert.log_groups) > 0
+    ])
+    error_message = "log_groups must contain at least one log group name"
+  }
+}
+
 variable "elasticsearch_alerts" {
   description = "List of Elasticsearch alert configurations"
   type = list(

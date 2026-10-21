@@ -186,6 +186,16 @@ For CloudWatch datasources, provide:
 - **period**: Aggregation period in seconds (default: `"300"`)
 - **region**: AWS region (default: `"default"`)
 
+### CloudWatch Logs Alerts
+For CloudWatch Logs Insights, use `cloudwatch_logs_alerts` with the CloudWatch datasource and provide:
+- **log_groups**: Log group names (e.g., `["/aws/opensearch/prod/search-slow"]`)
+- **query**: Logs Insights query that ends with a numeric `stats` command (e.g., `filter @message like /WARN/ | stats count(*) as slow`)
+- **stats_groups**: `stats ... by` fields to keep as alert labels (default: `[]`). A query that groups by a field must also group by `bin()`, for example `stats count(*) by bin(5m), index`
+- **time_range**: Query time range in seconds (default: `600`)
+- **region**: AWS region (default: `"default"`)
+
+See [examples/example-cloudwatch-logs.tf](examples/example-cloudwatch-logs.tf).
+
 ## Alert Fields
 
 ### Required (All Datasources)
@@ -200,6 +210,10 @@ For CloudWatch datasources, provide:
 ### Required (CloudWatch)
 - **namespace**: AWS namespace
 - **metric_name**: CloudWatch metric name
+
+### Required (CloudWatch Logs)
+- **log_groups**: Log group names
+- **query**: Logs Insights query ending with a numeric `stats` command
 
 ### Production Enhancements (Optional)
 - **description**: Human-readable alert context
