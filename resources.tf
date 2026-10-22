@@ -389,6 +389,8 @@ resource "grafana_rule_group" "alerts" {
           to   = 0
         }
         datasource_uid = local.datasource_uid
+        # Grafana stores the Elasticsearch query type on the query itself; without it every plan shows a "lucene" -> null diff
+        query_type = "lucene"
         model = jsonencode({
           bucketAggs = [
             for agg in rule.value.aggregation : {
