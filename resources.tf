@@ -36,7 +36,7 @@ EOT
 
 
 resource "grafana_rule_group" "alerts" {
-  count            = (length(var.prometheus_alerts) + length(var.cloudwatch_alerts) + length(var.cloudwatch_logs_alerts) + length(var.elasticsearch_alerts) + length(var.clickhouse_alerts)) > 0 ? 1 : 0
+  count            = local.alert_count > 0 ? 1 : 0
   name             = var.rule_group_name
   folder_uid       = var.folder_uid != null ? var.folder_uid : grafana_folder.folder[0].uid
   interval_seconds = 60
@@ -524,15 +524,15 @@ resource "grafana_rule_group" "alerts" {
           to   = 0
         }
         datasource_uid = local.datasource_uid
-        query_type     = local.clickhouse_query_type_map[rule.value.format] # Grafana copies the model's queryType here, set it to avoid a plan diff
+        query_type     = local.clickhouse_formats[rule.value.format].query_type # Grafana copies the model's queryType here, set it to avoid a plan diff
         model = jsonencode({
           datasource = {
             type = "grafana-clickhouse-datasource"
             uid  = local.datasource_uid
           }
           editorType = "sql"
-          format     = local.clickhouse_format_map[rule.value.format]
-          queryType  = local.clickhouse_query_type_map[rule.value.format]
+          format     = local.clickhouse_formats[rule.value.format].format
+          queryType  = local.clickhouse_formats[rule.value.format].query_type
           rawSql     = rule.value.query
           refId      = "A"
         })

@@ -1,16 +1,16 @@
 output "rule_group_id" {
   description = "The ID of the created rule group"
-  value       = (length(var.prometheus_alerts) + length(var.cloudwatch_alerts) + length(var.cloudwatch_logs_alerts) + length(var.elasticsearch_alerts) + length(var.clickhouse_alerts)) > 0 ? grafana_rule_group.alerts[0].id : null
+  value       = local.alert_count > 0 ? grafana_rule_group.alerts[0].id : null
 }
 
 output "rule_group_name" {
   description = "The name of the created rule group"
-  value       = (length(var.prometheus_alerts) + length(var.cloudwatch_alerts) + length(var.cloudwatch_logs_alerts) + length(var.elasticsearch_alerts) + length(var.clickhouse_alerts)) > 0 ? grafana_rule_group.alerts[0].name : null
+  value       = local.alert_count > 0 ? grafana_rule_group.alerts[0].name : null
 }
 
 output "alert_count" {
   description = "Number of alerts configured"
-  value       = length(var.prometheus_alerts) + length(var.cloudwatch_alerts) + length(var.cloudwatch_logs_alerts) + length(var.elasticsearch_alerts) + length(var.clickhouse_alerts)
+  value       = local.alert_count
 }
 
 output "prometheus_alert_count" {
