@@ -26,6 +26,16 @@ locals {
     "!=" = "neq"
   }
 
+  # ClickHouse plugin query format (the plugin's Format enum)
+  clickhouse_format_map = {
+    "time_series" = 0
+    "table"       = 1
+  }
+  clickhouse_query_type_map = {
+    "time_series" = "timeseries"
+    "table"       = "table"
+  }
+
   severity_map = {
     "critical" = "P1"
     "error"    = "P2"

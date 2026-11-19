@@ -166,6 +166,59 @@ variable "cloudwatch_logs_alerts" {
   }
 }
 
+variable "clickhouse_alerts" {
+  description = "List of ClickHouse SQL alert configurations"
+  type = list(
+    object({
+      name           = string
+      query          = string                    # ClickHouse SQL: numeric columns are values, string columns become alert labels
+      format         = optional(string, "table") # table (one value per row) or time_series (needs a time column)
+      time_range     = optional(number, 600)     # Query time range in seconds, used by $__timeFilter() and the other time macros
+      reducer        = optional(string, "last")  # Reducer function (last, mean, max, min, sum, count, etc.)
+      operator       = optional(string, ">")     # >, <, ==, !=, >=, <=
+      threshold      = number                    # Threshold value
+      severity       = string
+      description    = optional(string, null)
+      runbook_url    = optional(string, null)
+      team           = optional(string, null)
+      component      = optional(string, null)
+      slack_labels   = optional(list(string), []) # String columns to show in Slack (e.g., ["country"])
+      pending_for    = optional(string, "5m")
+      no_data_state  = optional(string, "OK") # A grouped query with no matching rows returns no data, not 0
+      exec_err_state = optional(string, "Alerting")
+    })
+  )
+  default = []
+
+  validation {
+    condition = alltrue([
+      for alert in var.clickhouse_alerts : contains([">", "<", "==", "!=", ">=", "<="], alert.operator)
+    ])
+    error_message = "operator must be one of: >, <, ==, !=, >=, <="
+  }
+
+  validation {
+    condition = alltrue([
+      for alert in var.clickhouse_alerts : contains(["last", "mean", "max", "min", "sum", "count", "diff", "diff_abs", "count_non_null"], alert.reducer)
+    ])
+    error_message = "reducer must be one of: last, mean, max, min, sum, count, diff, diff_abs, count_non_null"
+  }
+
+  validation {
+    condition = alltrue([
+      for alert in var.clickhouse_alerts : contains(["table", "time_series"], alert.format)
+    ])
+    error_message = "format must be one of: table, time_series"
+  }
+
+  validation {
+    condition = alltrue([
+      for alert in var.clickhouse_alerts : alert.time_range >= 60 && alert.time_range <= 2592000
+    ])
+    error_message = "time_range must be between 60 and 2592000 seconds (30 days)"
+  }
+}
+
 variable "elasticsearch_alerts" {
   description = "List of Elasticsearch alert configurations"
   type = list(
