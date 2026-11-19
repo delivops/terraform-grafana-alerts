@@ -26,6 +26,15 @@ locals {
     "!=" = "neq"
   }
 
+  # Total number of alerts, the rule group is only created when there is at least one
+  alert_count = length(var.prometheus_alerts) + length(var.cloudwatch_alerts) + length(var.cloudwatch_logs_alerts) + length(var.elasticsearch_alerts) + length(var.clickhouse_alerts)
+
+  # ClickHouse plugin query format: the plugin's Format enum and the matching queryType
+  clickhouse_formats = {
+    "time_series" = { format = 0, query_type = "timeseries" }
+    "table"       = { format = 1, query_type = "table" }
+  }
+
   severity_map = {
     "critical" = "P1"
     "error"    = "P2"

@@ -166,6 +166,87 @@ variable "cloudwatch_logs_alerts" {
   }
 }
 
+variable "clickhouse_alerts" {
+  description = "List of ClickHouse SQL alert configurations"
+  type = list(
+    object({
+      name           = string
+      query          = string                    # ClickHouse SQL: numeric columns are values, string columns become alert labels
+      format         = optional(string, "table") # table (one value per row) or time_series (needs a time column)
+      time_range     = optional(number, 600)     # Query time range in seconds, used by $__timeFilter() and the other time macros
+      reducer        = optional(string, "last")  # time_series only: last, mean, max, min, sum, count or median
+      operator       = optional(string, ">")     # >, <, ==, !=, >=, <=
+      threshold      = number                    # Threshold value
+      severity       = string
+      description    = optional(string, null)
+      runbook_url    = optional(string, null)
+      team           = optional(string, null)
+      component      = optional(string, null)
+      slack_labels   = optional(list(string), []) # String columns to show in Slack (e.g., ["country"])
+      pending_for    = optional(string, "5m")
+      no_data_state  = optional(string, "OK") # A grouped query with no matching rows returns no data, not 0
+      exec_err_state = optional(string, "Alerting")
+    })
+  )
+  default = []
+
+  validation {
+    condition = alltrue([
+      for alert in var.clickhouse_alerts : contains([">", "<", "==", "!=", ">=", "<="], alert.operator)
+    ])
+    error_message = "operator must be one of: >, <, ==, !=, >=, <="
+  }
+
+  validation {
+    condition = alltrue([
+      for alert in var.clickhouse_alerts : contains(["last", "mean", "max", "min", "sum", "count", "median"], alert.reducer)
+    ])
+    error_message = "reducer must be one of: last, mean, max, min, sum, count, median (the reducers Grafana's reduce expression implements)"
+  }
+
+  validation {
+    condition = alltrue([
+      for alert in var.clickhouse_alerts : alert.format == "time_series" || alert.reducer == "last"
+    ])
+    error_message = "reducer only applies to format = \"time_series\": a table query gives one number per row, which Grafana's reduce passes through unchanged. Aggregate in the SQL instead"
+  }
+
+  validation {
+    condition = alltrue([
+      for alert in var.clickhouse_alerts : contains(["table", "time_series"], alert.format)
+    ])
+    error_message = "format must be one of: table, time_series"
+  }
+
+  validation {
+    condition = alltrue([
+      for alert in var.clickhouse_alerts : alert.time_range >= 60 && alert.time_range <= 86400
+    ])
+    error_message = "time_range must be between 60 and 86400 seconds, the query runs on every evaluation (every 60 seconds)"
+  }
+
+  validation {
+    condition = alltrue([
+      for alert in var.clickhouse_alerts : contains(["critical", "error", "warning", "info"], alert.severity)
+    ])
+    error_message = "severity must be one of: critical, error, warning, info"
+  }
+
+  validation {
+    condition = alltrue([
+      for alert in var.clickhouse_alerts : contains(["Alerting", "NoData", "OK", "KeepLast"], alert.no_data_state)
+    ])
+    error_message = "no_data_state must be one of: Alerting, NoData, OK, KeepLast"
+  }
+
+  validation {
+    condition = alltrue([
+      for alert in var.clickhouse_alerts : contains(["Alerting", "Error", "OK", "KeepLast"], alert.exec_err_state)
+    ])
+    error_message = "exec_err_state must be one of: Alerting, Error, OK, KeepLast"
+  }
+}
+
 variable "elasticsearch_alerts" {
   description = "List of Elasticsearch alert configurations"
   type = list(

@@ -36,7 +36,7 @@ EOT
 
 
 resource "grafana_rule_group" "alerts" {
-  count            = (length(var.prometheus_alerts) + length(var.cloudwatch_alerts) + length(var.cloudwatch_logs_alerts) + length(var.elasticsearch_alerts)) > 0 ? 1 : 0
+  count            = local.alert_count > 0 ? 1 : 0
   name             = var.rule_group_name
   folder_uid       = var.folder_uid != null ? var.folder_uid : grafana_folder.folder[0].uid
   interval_seconds = 60
@@ -45,6 +45,10 @@ resource "grafana_rule_group" "alerts" {
     precondition {
       condition     = length(var.cloudwatch_logs_alerts) == 0 || var.datasource_type == "cloudwatch"
       error_message = "cloudwatch_logs_alerts need datasource_type = \"cloudwatch\""
+    }
+    precondition {
+      condition     = length(var.clickhouse_alerts) == 0 || var.datasource_type == "grafana-clickhouse-datasource"
+      error_message = "clickhouse_alerts need datasource_type = \"grafana-clickhouse-datasource\""
     }
   }
 
@@ -484,6 +488,109 @@ resource "grafana_rule_group" "alerts" {
         runbook_url  = rule.value.runbook_url != null ? rule.value.runbook_url : null
         severity     = rule.value.severity
         slack_labels = join("|", rule.value.slack_labels) # Convert list to pipe-separated string
+      }
+
+      labels = {
+        priority  = local.severity_map[rule.value.severity]
+        team      = rule.value.team != null ? rule.value.team : null
+        component = rule.value.component != null ? rule.value.component : null
+      }
+
+      notification_settings {
+        contact_point   = var.contact_point_name != null ? var.contact_point_name : grafana_contact_point.slack[0].name
+        group_by        = var.notification_settings.group_by
+        group_wait      = var.notification_settings.group_wait
+        group_interval  = var.notification_settings.group_interval
+        repeat_interval = var.notification_settings.repeat_interval
+      }
+    }
+  }
+
+  # ClickHouse SQL alerts
+  dynamic "rule" {
+    for_each = var.clickhouse_alerts
+    content {
+      name           = rule.value.name
+      condition      = "C"
+      for            = rule.value.pending_for
+      no_data_state  = rule.value.no_data_state
+      exec_err_state = rule.value.exec_err_state
+
+      # Query A: ClickHouse SQL query
+      data {
+        ref_id = "A"
+        relative_time_range {
+          from = rule.value.time_range
+          to   = 0
+        }
+        datasource_uid = local.datasource_uid
+        query_type     = local.clickhouse_formats[rule.value.format].query_type # Grafana copies the model's queryType here, set it to avoid a plan diff
+        model = jsonencode({
+          datasource = {
+            type = "grafana-clickhouse-datasource"
+            uid  = local.datasource_uid
+          }
+          editorType = "sql"
+          format     = local.clickhouse_formats[rule.value.format].format
+          queryType  = local.clickhouse_formats[rule.value.format].query_type
+          rawSql     = rule.value.query
+          refId      = "A"
+        })
+      }
+
+      # Query B: Reducer - reduce each series to a single value
+      data {
+        ref_id = "B"
+        relative_time_range {
+          from = 0
+          to   = 0
+        }
+        datasource_uid = "__expr__"
+        model = jsonencode({
+          datasource = {
+            type = "__expr__"
+            uid  = "__expr__"
+          }
+          expression = "A"
+          reducer    = rule.value.reducer
+          refId      = "B"
+          type       = "reduce"
+        })
+      }
+
+      # Query C: Threshold comparison
+      data {
+        ref_id = "C"
+        relative_time_range {
+          from = 0
+          to   = 0
+        }
+        datasource_uid = "__expr__"
+        model = jsonencode({
+          datasource = {
+            type = "__expr__"
+            uid  = "__expr__"
+          }
+          expression = "B"
+          conditions = [
+            {
+              evaluator = {
+                params = [rule.value.threshold]
+                type   = lookup(local.operator_map, rule.value.operator, "gt")
+              }
+            }
+          ]
+          refId = "C"
+          type  = "threshold"
+        })
+      }
+
+      # Opinionated production-ready annotations
+      annotations = {
+        description  = rule.value.description != null ? rule.value.description : "Alert: ${rule.value.name}"
+        runbook_url  = rule.value.runbook_url != null ? rule.value.runbook_url : null
+        severity     = rule.value.severity
+        slack_labels = join("|", rule.value.slack_labels) # Convert list to pipe-separated regex pattern
       }
 
       labels = {
